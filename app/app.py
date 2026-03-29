@@ -1,11 +1,16 @@
+import os
+
 from flask import Flask, jsonify
 
 app = Flask(__name__)
 
+APP_VERSION = os.environ.get("APP_VERSION", "0.0.0")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
+
 
 @app.route("/")
 def root():
-    return jsonify(service="task-app"), 200
+    return jsonify(service="task-app", version=APP_VERSION, environment=ENVIRONMENT), 200
 
 
 @app.route("/healthz")

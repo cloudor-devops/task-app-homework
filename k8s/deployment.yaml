@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: task-app
   namespace: production
+  labels:
+    app.kubernetes.io/name: task-app
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: argocd
 spec:
   replicas: 2
   strategy:
@@ -17,14 +21,30 @@ spec:
     metadata:
       labels:
         app: task-app
+        app.kubernetes.io/name: task-app
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/healthz"
     spec:
       serviceAccountName: task-app
+      terminationGracePeriodSeconds: 30
       containers:
         - name: task-app
           image: task-app:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: task-app
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 10
+            periodSeconds: 3
           livenessProbe:
             httpGet:
               path: /healthz
@@ -48,3 +68,7 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
